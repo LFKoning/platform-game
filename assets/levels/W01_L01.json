@@ -1,0 +1,21 @@
+{
+    "tileset": "W01",
+    "player": [0, 1],
+    "background": [],
+    "tiles": [
+        "                                                  ",
+        "                                                  ",
+        "                                                  ",
+        "                                                  ",
+        "                                                  ",
+        "                                                  ",
+        "                                                  ",
+        "   AA            AAAA                             ",
+        "         AA                                       ",
+        "                    A          AA                 ",
+        "              AAAAAAAAAAAAA                       ",
+        "           A  AAA                                 ",
+        "         AAA  AAAAAAAAAAAAAAAAA                   ",
+        "BBBBBBBBBBBB  BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+    ]
+}
