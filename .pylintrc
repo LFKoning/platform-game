@@ -5,3 +5,6 @@ good-names=
 
 # Disable messages
 disable=logging-fstring-interpolation
+
+# Whitelist modules
+extension-pkg-whitelist=pygame

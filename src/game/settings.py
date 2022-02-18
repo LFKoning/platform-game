@@ -10,4 +10,7 @@ SETTINGS = {
     "gravity": 0.18,
     "move_speed": 8,
     "jump_speed": 16,
+    "levels": [
+        "assets/levels/W01_L01.json"
+    ]
 }

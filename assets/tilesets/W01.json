@@ -2,7 +2,7 @@
     "tile_width": 64,
     "tile_height": 64,
     "tiles": {
-        "A": "assets/gfx/tiles/W01_A.png",
-        "B": "assets/gfx/tiles/W01_B.png"
+        "A": {"image": "assets/gfx/tiles/W01_A.png"},
+        "B": {"image": "assets/gfx/tiles/W01_B.png"}
     }
 }

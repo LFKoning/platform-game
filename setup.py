@@ -1,11 +1,8 @@
 """Package Setup File."""
 import setuptools
 
-with open("README.md") as readme_file:
+with open("README.md", encoding="utf-8") as readme_file:
     README = readme_file.read()
-
-with open("HISTORY.md") as history_file:
-    HISTORY = history_file.read()
 
 REQUIREMENTS = [
     "pygame==2.1.2",
@@ -16,11 +13,11 @@ EXTRAS_REQUIRE = {
 }
 
 setuptools.setup(
-    name="the_game",
+    name="game",
     version="0.0.1",
-    description="The Game.",
-    long_description=README + "\n\n" + HISTORY,
-    keywords="game, gaming, side-scroller",
+    description="Platform game built with pygame.",
+    long_description=README,
+    keywords="game, gaming, platform, platform game, side-scroller",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
@@ -39,7 +36,7 @@ setuptools.setup(
     packages=setuptools.find_packages("src"),
     entry_points={
         "console_scripts": [
-            "game = the_game.main:run",
+            "game = game.main:run",
         ],
     },
 )

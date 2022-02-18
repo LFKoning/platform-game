@@ -1,9 +1,8 @@
 {
-    "tileset": "W01",
-    "player": [0, 1],
-    "background": [],
+    "tileset": "assets/tilesets/W01.json",
+    "spawn": [0, 13],
     "tiles": [
-        "                                                  ",
+        "AB                                                ",
         "                                                  ",
         "                                                  ",
         "                                                  ",

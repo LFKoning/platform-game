@@ -18,7 +18,10 @@ class Tileset:
 
     def __init__(self, tile_path):
         self._log = logging.getLogger(__name__)
-        self._map = self._load(tile_path)
+
+        tileset = self._load_file(tile_path)
+        self.tile_width, self.tile_height = self._get_dimensions(tileset)
+        self._map = self._construct_map(tileset)
 
     def find(self, tile_code):
         """Looks up a tile code and returns its surface."""
@@ -26,13 +29,13 @@ class Tileset:
             self._error(f"Tile {tile_code!r} not found.")
         return self._map[tile_code]
 
-    def _load(self, tile_path):
+    def _load_file(self, tile_path):
         """Loads a tileset from a JSON file."""
         self._log.debug(f"Loading tileset: {tile_path!r}")
 
         # Read the file contents
         try:
-            with open(tile_path, "r") as tile_file:
+            with open(tile_path, "r", encoding="utf-8") as tile_file:
                 tileset = json.load(tile_file)
 
         except FileNotFoundError:
@@ -48,54 +51,63 @@ class Tileset:
                 + ", ".join([repr(v) for v in missing])
             )
 
-        # Check tile dimensions
-        width = tileset["tile_width"]
-        try:
-            width = int(width)
-        except ValueError():
-            self._error(f"Tileset {tile_path!r}: Width must be integer.")
+        return tileset
 
-        height = tileset["tile_height"]
+    def _get_dimensions(self, tileset):
+        """Gets tile dimensions from the tileset."""
+
         try:
-            height = int(height)
+            width = int(tileset["tile_width"])
         except ValueError():
-            self._error(f"Tileset {tile_path!r}: Height must be integer.")
+            self._error(f"Tile width must be integer.")
+
+        try:
+            height = int(tileset["tile_height"])
+        except ValueError():
+            self._error(f"Tile height must be integer.")
+
+        return width, height
+
+    def _construct_map(self, tileset):
+        """Creates the tiles specification."""
 
         # Check the tiles mapping
         if not isinstance(tileset["tiles"], dict):
-            self._error(f"Tileset {tile_path!r}: Tiles must be a dictionary.")
+            self._error(f"Tileset must specify tiles as a dictionary.")
 
         invalid = set(tileset["tiles"]) - self._valid_codes
         if invalid:
             self._error(
-                f"Tileset {tile_path!r}: Contains invalid tile codes:"
+                f"Tileset contains invalid tile codes:"
                 + ", ".join([repr(code) for code in invalid])
             )
 
-        # Create the tiles
         tilemap = {}
-        for code, image_path in tileset["tiles"].items():
+        for code, properties in tileset["tiles"].items():
             # Load tile image
-            if image_path:
+            if "image" in properties:
+                image_path = properties["image"]
                 try:
                     surface = pygame.image.load(image_path)
-                    if surface.get_width() != width or surface.get_height() != height:
-                        surface = pygame.transform.scale(surface, (width, height))
+                    if (
+                        surface.get_width() != self.tile_width
+                        or surface.get_height() != self.tile_height
+                    ):
+                        surface = pygame.transform.scale(
+                            surface, (self.tile_width, self.tile_height)
+                        )
                 except FileNotFoundError:
-                    self._error(
-                        f"Tileset {tile_path!r}: Cannot find tile image {image_path!r}."
-                    )
+                    self._error(f"Cannot find tile image {image_path!r}.")
                 except pygame.error:
-                    self._error(
-                        f"Tileset {tile_path!r}: Invalid tile image {image_path!r}."
-                    )
+                    self._error(f"Invalid tile image {image_path!r}.")
 
             # Create grey filler tile
             else:
-                surface = pygame.Surface((width, height))
+                surface = pygame.Surface((self.tile_width, self.tile_height))
                 surface.fill("grey")
 
-            tilemap[code] = surface
+            properties["image"] = surface
+            tilemap[code] = properties
 
         return tilemap
 
@@ -103,3 +115,23 @@ class Tileset:
         """Logs and handles exceptions."""
         self._log.error(msg)
         raise TilesetFileError(msg)
+
+
+class Tile(pygame.sprite.Sprite):
+    """Class for handling a single tile."""
+
+    def __init__(self, x, y, properties):
+
+        super().__init__()
+
+        # Store position
+        # self.x = int(x)
+        # self.y = int(y)
+
+        # Get tile properties
+        # TODO Consider: z-order, offset, transparency?
+        self.collide = properties.get("collide", True)
+
+        # Get surface properties
+        self.image = properties["image"]
+        self.rect = self.image.get_rect(topleft=(x, y))
