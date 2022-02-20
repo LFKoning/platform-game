@@ -93,7 +93,7 @@ class GameEngine:
     def _draw(self):
         """Redraws the screen."""
         self.window.fill(self._bg_color)
-        self._level.draw_tiles(self.window)
+        self._level.draw(self.window)
         pygame.display.update()
 
     def _error(self, msg):

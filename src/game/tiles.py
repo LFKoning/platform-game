@@ -89,13 +89,9 @@ class Tileset:
                 image_path = properties["image"]
                 try:
                     surface = pygame.image.load(image_path)
-                    if (
-                        surface.get_width() != self.tile_width
-                        or surface.get_height() != self.tile_height
-                    ):
-                        surface = pygame.transform.scale(
-                            surface, (self.tile_width, self.tile_height)
-                        )
+                    surface = pygame.transform.scale(
+                        surface, (self.tile_width, self.tile_height)
+                    )
                 except FileNotFoundError:
                     self._error(f"Cannot find tile image {image_path!r}.")
                 except pygame.error:
@@ -124,14 +120,24 @@ class Tile(pygame.sprite.Sprite):
 
         super().__init__()
 
-        # Store position
-        # self.x = int(x)
-        # self.y = int(y)
-
         # Get tile properties
         # TODO Consider: z-order, offset, transparency?
-        self.collide = properties.get("collide", True)
+        # self.collide = properties.get("collide", True)
 
         # Get surface properties
         self.image = properties["image"]
         self.rect = self.image.get_rect(topleft=(x, y))
+
+    def __getattr__(self, attribute):
+        """Re-map Rect attributes."""
+        if hasattr(self.rect, attribute):
+            return getattr(self.rect, attribute)
+        else:
+            raise AttributeError(
+                f"Tile has no attribute {attribute!r}."
+            )
+
+    def update(self, dx, dy):
+        """Moves tile by the given offset."""
+        self.rect.x += dx
+        self.rect.y += dy
