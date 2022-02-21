@@ -24,7 +24,7 @@ class GameEngine:
     def __init__(self, settings):
         self._log = logging.getLogger(__name__)
 
-        self._settings = settings
+        self.settings = settings
         self.name = settings.get("game_name", "My Game")
         self._log.info(f"Starting game: {self.name!r}")
 
@@ -51,7 +51,8 @@ class GameEngine:
 
         # Create the game window
         self._log.debug(f"Creating window: {width} x {height}.")
-        self.window = pygame.display.set_mode((width, height))
+        self.window_size = pygame.Vector2(width, height)
+        self.window = pygame.display.set_mode(self.window_size)
         pygame.display.set_caption(self.name)
         self._clock = pygame.time.Clock()
 
@@ -64,16 +65,17 @@ class GameEngine:
 
     def _next_level(self):
         """Loads the next game level."""
-        levels = self._settings.get("levels")
+        levels = self.settings.get("levels")
         if len(levels) > self._level_nr + 1:
             self._level_nr += 1
-            self._level = Level(levels[self._level_nr], self._settings)
+            self._level = Level(levels[self._level_nr], self)
         else:
             self.end_game()
 
     def end_game(self):
         """Finishes the game"""
         # TODO: End game screen / credits / etc.
+        self._log.info("Ending the game.")
         pygame.quit()
 
     def run(self):

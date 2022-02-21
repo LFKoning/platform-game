@@ -6,6 +6,8 @@ from game.actor import Actor
 
 
 class Player(Actor):
+    """Class for the player."""
+
     def handle_input(self):
         """Reads input and performs associated actions."""
 

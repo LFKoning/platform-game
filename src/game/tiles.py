@@ -59,12 +59,12 @@ class Tileset:
         try:
             width = int(tileset["tile_width"])
         except ValueError():
-            self._error(f"Tile width must be integer.")
+            self._error(f"Tile width must be integer, got {tileset['tile_width']!r}.")
 
         try:
             height = int(tileset["tile_height"])
         except ValueError():
-            self._error(f"Tile height must be integer.")
+            self._error(f"Tile height must be integer, got {tileset['tile_width']!r}.")
 
         return width, height
 
@@ -73,12 +73,12 @@ class Tileset:
 
         # Check the tiles mapping
         if not isinstance(tileset["tiles"], dict):
-            self._error(f"Tileset must specify tiles as a dictionary.")
+            self._error("Tileset must specify tiles as a dictionary.")
 
         invalid = set(tileset["tiles"]) - self._valid_codes
         if invalid:
             self._error(
-                f"Tileset contains invalid tile codes:"
+                "Tileset contains invalid tile codes:"
                 + ", ".join([repr(code) for code in invalid])
             )
 
@@ -127,15 +127,4 @@ class Tile(pygame.sprite.Sprite):
         """Re-map Rect attributes."""
         if hasattr(self.rect, attribute):
             return getattr(self.rect, attribute)
-        else:
-            raise AttributeError(
-                f"Tile has no attribute {attribute!r}."
-            )
-
-    def update(self, x, y):
-        """Moves tile by the given offset."""
-        self.offset.x = x
-        self.offset.y = y
-
-        self.rect.x = self.offset.x + self.rect.x
-        self.rect.y = self.offset.y + self.rect.y
+        raise AttributeError(f"Tile has no attribute {attribute!r}.")

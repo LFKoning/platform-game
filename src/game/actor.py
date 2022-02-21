@@ -1,22 +1,17 @@
 """Module for the Actor base class."""
-import logging
-
 import pygame
 
 
 class Actor:
     """Base class for all actors."""
 
-    def __init__(self, name, x, y, level):
+    def __init__(self, x, y, level):
         super().__init__()
 
-        self.name = name
         self.level = level
 
         self.speed = 8
         self.direction = pygame.Vector2(0, 0)
-        self.location = pygame.Vector2(x, y)
-        self._offset = pygame.Vector2(0, 0)
 
         self.jump_speed = 16
         self.gravity = 0.8
@@ -31,14 +26,12 @@ class Actor:
         """Re-map Rect attributes."""
         if hasattr(self.rect, attribute):
             return getattr(self.rect, attribute)
-        else:
-            raise AttributeError(
-                f"{self.__class__.__name__} has no attribute {attribute!r}."
-            )
+        raise AttributeError(
+            f"{self.__class__.__name__} has no attribute {attribute!r}."
+        )
 
     def move(self, direction):
         """Moves the location of the actor."""
-        self.faces = direction
         self.direction.x = 1 if direction == "right" else -1
 
     def stop(self):
@@ -49,21 +42,15 @@ class Actor:
         """Makes the actor jump."""
         self.direction.y = -self.jump_speed
 
-    def update_offset(self, x, y):
-        """Updates the world offset."""
-        self._offset.x = x
-        self._offset.y = y
-
     def _move_horizontal(self):
         """Handle horizontal movement."""
-
-        # Move the character
-        self.location.x += self.direction.x * self.speed
-        self.rect.x = self._offset.x + self.location.x
 
         # No movement
         if self.direction.x == 0:
             return
+
+        # Move the character
+        self.rect.x += self.direction.x * self.speed
 
         # Check collisions
         collided = self._check_collision()
@@ -71,16 +58,12 @@ class Actor:
             # Bumped into something on the left
             if self.direction.x < 0:
                 self.direction.x = 0
-                overlap = self.left - collided.right
-                self.location.x -= overlap
-                self.rect.x -= overlap
+                self.rect.left = collided.right
 
             # Bumped into something on the right
             elif self.direction.x > 0:
                 self.direction.x = 0
-                overlap = self.right - collided.left
-                self.location.x -= overlap
-                self.rect.x -= overlap
+                self.rect.right = collided.left
 
     def _move_vertical(self):
         """Handles vertical movement."""
@@ -94,8 +77,7 @@ class Actor:
         # Apply vertical movement and check collisions
         self.on_top = None
         self.direction.y += self.gravity
-        self.location.y += self.direction.y
-        self.rect.y = self._offset.y + self.location.y
+        self.rect.y += self.direction.y
 
         collided = self._check_collision()
         if collided:
@@ -103,28 +85,21 @@ class Actor:
             if self.direction.y > 0:
                 self.on_top = collided
                 self.direction.y = 0
-                overlap = self.bottom - collided.top
-                self.location.y -= overlap
-                self.rect.y -= overlap
+                self.rect.bottom = collided.top
 
             # Bumped into something above the player
             elif self.direction.y < 0:
                 self.direction.y = 0
-                overlap = self.top - collided.bottom
-                self.location.y += overlap
-                self.rect.y -= overlap
+                self.rect.top = collided.bottom
 
     def _check_collision(self):
         """Checks for colissions."""
         for target in self.level.tiles.sprites():
             if self.rect.colliderect(target.rect):
                 return target
+        return None\
 
     def update(self):
         """Updates actor."""
         self._move_vertical()
         self._move_horizontal()
-
-    def draw(self, target):
-        """Draws the actor onto the game surface."""
-        target.blit(self.image, (self.rect.x, self.rect.y))

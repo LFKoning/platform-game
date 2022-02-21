@@ -1,12 +1,12 @@
 """Module for the Level class."""
 import json
 import logging
-from turtle import position
 
 import pygame
 
 from game.tiles import Tile, Tileset
 from game.player import Player
+from game.camera import BoundedCamera
 
 
 class LevelFileError(Exception):
@@ -26,19 +26,20 @@ class Level:
         "jump_speed",
     ]
 
-    def __init__(self, level_path, settings):
+    def __init__(self, level_path, engine):
         self._log = logging.getLogger(__name__)
-        self._settings = settings
         self._offset = pygame.Vector2(0, 0)
 
         # Create the level
-        self._level = self._load(level_path, settings)
+        self._level = self._load(level_path, engine.settings)
         self._tileset = Tileset(self._level["tileset"])
-        self.tiles, self._bounds = self.construct(self._level["tiles"], self._tileset)
+        self.tiles, self.bounds = self._construct(self._level["tiles"], self._tileset)
+
+        # Create the camera
+        self._camera = BoundedCamera(engine.window_size, self.bounds)
 
         # Add the player
         self.player = self._spawn_player()
-        self.scroll_to(self.player.x, self.player.y)
 
     def _load(self, level_path, defaults):
         """Loads a level from a JSON file."""
@@ -66,7 +67,8 @@ class Level:
 
         return level
 
-    def construct(self, level, tileset):
+    @staticmethod
+    def _construct(level, tileset):
         """Constructs tiles for the level."""
         tiles = pygame.sprite.Group()
         bounds = None
@@ -97,28 +99,6 @@ class Level:
 
         return tiles, bounds
 
-    def scroll_by(self, dx, dy):
-        """Scrolls the level by the given offset."""
-        self.scroll_to(self._offset + dx, self._offset + dy)
-
-    def scroll_to(self, x, y):
-        """Scrolls the level to the location offset."""
-
-        # Get window dimensions
-        win_width = self._settings["window_width"]
-        win_height = self._settings["window_height"]
-
-        # Set offset
-        self._offset.x = x + win_width / 2
-        self._offset.y = y + win_height / 2
-
-        # Check level bounds
-
-        # Update offset for everything in the level
-        self.tiles.update(self._offset.x, self._offset.y)
-        self.player.update_offset(self._offset.x, self._offset.y)
-        # self._npcs.update(self._offset.x, self._offset.y)
-
     def _spawn_player(self):
         """Spawns the player into the level."""
 
@@ -128,17 +108,20 @@ class Level:
             spawn_x = int(spawn_x * self._tileset.tile_width)
             spawn_y = int(spawn_y * self._tileset.tile_height)
         except (TypeError, ValueError):
-            self._error(f"Invalid player spawn point, use [x, y] integers.")
+            self._error("Invalid player spawn point, use [x, y] integers.")
 
-        return Player("Player 1", spawn_x, spawn_y, self)
+        return Player(spawn_x, spawn_y, self)
 
     def draw(self, target):
         """Draws tiles on the target surface."""
 
         self.player.update()
+        self._camera.update(self.player)
 
-        self.tiles.draw(target)
-        self.player.draw(target)
+        # Draw everything
+        for tile in self.tiles:
+            target.blit(tile.image, self._camera.apply(tile))
+        target.blit(self.player.image, self._camera.apply(self.player))
 
     def _error(self, msg):
         """Logs and handles exceptions."""
