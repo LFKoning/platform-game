@@ -4,8 +4,8 @@ import pygame
 
 from game.actor import Actor
 
-class Player(Actor):
 
+class Player(Actor):
     def handle_input(self):
         """Reads input and performs associated actions."""
 
@@ -20,10 +20,10 @@ class Player(Actor):
         else:
             self.stop()
 
-        if keys[pygame.K_SPACE] and self.on_ground:
+        if keys[pygame.K_SPACE] and self.on_top:
             self.jump()
 
-    def update(self, level):
+    def update(self):
         """Updates the player."""
         self.handle_input()
-        super().update(level)
+        super().update()

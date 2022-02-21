@@ -100,7 +100,7 @@ class Level:
 
     def scroll_by(self, dx, dy):
         """Scrolls the level by the given offset."""
-        self.scroll_to(self._offset + dx, self._offset +dy)
+        self.scroll_to(self._offset + dx, self._offset + dy)
 
     def scroll_to(self, x, y):
         """Scrolls the level to the location offset."""
@@ -131,14 +131,14 @@ class Level:
         except (TypeError, ValueError):
             self._error(f"Invalid player spawn point, use [x, y] integers.")
 
-        return Player("Player 1", spawn_x, spawn_y)
+        return Player("Player 1", spawn_x, spawn_y, self)
 
     def draw(self, target):
         """Draws tiles on the target surface."""
 
         self.tiles.draw(target)
 
-        self.player.update(self)
+        self.player.update()
         self.player.draw(target)
 
     def _error(self, msg):

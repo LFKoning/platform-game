@@ -7,19 +7,20 @@ import pygame
 class Actor:
     """Base class for all actors."""
 
-    def __init__(self, name, x, y):
+    def __init__(self, name, x, y, level):
         super().__init__()
 
         self.name = name
+        self.level = level
 
         self.speed = 8
         self.direction = pygame.Vector2(0, 0)
         self.location = pygame.Vector2(x, y)
 
-        self.jump_height = 16
+        self.jump_speed = 16
         self.gravity = 0.8
 
-        self.on_ground = False
+        self.on_top = None
 
         self.image = pygame.Surface((64, 64))
         self.image.fill("red")
@@ -36,11 +37,9 @@ class Actor:
             )
 
     def move(self, direction):
-        """Moves the actor"""
-
+        """Moves the location of the actor."""
         self.faces = direction
         self.direction.x = 1 if direction == "right" else -1
-        self.location.x += self.direction.x * self.speed
 
     def stop(self):
         """Stops movement."""
@@ -48,67 +47,83 @@ class Actor:
 
     def jump(self):
         """Makes the actor jump."""
-        self.direction.y = -self.jump_height
-
-    def handle_collision(self, target):
-        """Handle collision with another object."""
-
-        # Bumped into something on the right
-        # if self.direction.x > 0:
-        #     overlap = self.right - target.left
-        #     self.location.x -= overlap
-        #     self.rect.x -= overlap
-        #     self.direction.x = 0
-
-        # # Bumped into something on the left
-        # elif self.direction.x < 0:
-        #     overlap = self.left - target.right
-        #     self.location.x += overlap
-        #     self.rect.x += overlap
-        #     self.direction.x = 0
-
-        # Landed on something
-        if self.direction.y > 0:
-            overlap = self.bottom - target.top
-            self.location.y -= overlap
-            self.rect.y -= overlap
-            self.direction.y = 0
-            self.on_ground = True
-
-        # Bumped into something above the player
-        elif self.direction.y < 0:
-            overlap = self.top - target.bottom
-            self.location.y += overlap
-            self.rect.y -= overlap
-            self.direction.y = 0
-
-    def _apply_gravity(self):
-        """Applies gravity to the actor."""
-        if not self.on_ground:
-            self.direction.y += self.gravity
-            self.location.y += self.direction.y
+        self.direction.y = -self.jump_speed
 
     def update_offset(self, dx, dy):
-        """Moves actor by the given offset."""
+        """Updates the world offset."""
         self._offset.x += dx
         self._offset.y += dy
 
-    def check_collision(self, targets):
-        """Checks for colissions."""
-        for target in targets.sprites():
-            if self.rect.colliderect(target.rect):
-                self.handle_collision(target)
+    def _move_horizontal(self):
+        """Handle horizontal movement."""
 
-    def update(self, level):
-        """Updates actor."""
-
+        # Move the character
+        self.location.x += self.direction.x * self.speed
         self.rect.x = self._offset.x + self.location.x
+
+        # No movement
+        if self.direction.x == 0:
+            return
+
+        # Check collisions
+        collided = self._check_collision()
+        if collided:
+            # Bumped into something on the left
+            if self.direction.x < 0:
+                self.direction.x = 0
+                overlap = self.left - collided.right
+                self.location.x -= overlap
+                self.rect.x -= overlap
+
+            # Bumped into something on the right
+            elif self.direction.x > 0:
+                self.direction.x = 0
+                overlap = self.right - collided.left
+                self.location.x -= overlap
+                self.rect.x -= overlap
+
+    def _move_vertical(self):
+        """Handles vertical movement."""
+
+        # Standing on an object
+        if self.on_top and self.direction.y == 0:
+            # Check if still on top
+            if self.left <= self.on_top.right and self.right >= self.on_top.left:
+                return
+
+        # Apply vertical movement and check collisions
+        self.on_top = None
+        self.direction.y += self.gravity
+        self.location.y += self.direction.y
         self.rect.y = self._offset.y + self.location.y
 
-        self.on_ground = False
-        self.check_collision(level.tiles)
+        collided = self._check_collision()
+        if collided:
+            # Landed on something
+            if self.direction.y > 0:
+                self.on_top = collided
+                self.direction.y = 0
+                overlap = self.bottom - collided.top
+                self.location.y -= overlap
+                self.rect.y -= overlap
 
-        self._apply_gravity()
+            # Bumped into something above the player
+            elif self.direction.y < 0:
+                self.direction.y = 0
+                overlap = self.top - collided.bottom
+                self.location.y += overlap
+                self.rect.y -= overlap
+
+    def _check_collision(self):
+        """Checks for colissions."""
+        for target in self.level.tiles.sprites():
+            if self.rect.colliderect(target.rect):
+                return target
+
+    def update(self):
+        """Updates actor."""
+        self._move_vertical()
+        self._move_horizontal()
 
     def draw(self, target):
         """Draws the actor onto the game surface."""
