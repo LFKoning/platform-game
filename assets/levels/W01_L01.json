@@ -1,9 +1,9 @@
 {
     "tileset": "assets/tilesets/W01.json",
-    "spawn": [0, 0],
+    "spawn": [1, 0],
     "tiles": [
         "                                                  ",
-        "BB     B                                          ",
+        "AB     B                                          ",
         "  AAAAAB                                          ",
         "                                                  ",
         "                                                  ",

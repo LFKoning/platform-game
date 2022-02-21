@@ -119,14 +119,9 @@ class Tile(pygame.sprite.Sprite):
     def __init__(self, x, y, properties):
 
         super().__init__()
-
-        # Get tile properties
-        # TODO Consider: z-order, offset, transparency?
-        # self.collide = properties.get("collide", True)
-
-        # Get surface properties
         self.image = properties["image"]
         self.rect = self.image.get_rect(topleft=(x, y))
+        self.offset = pygame.Vector2(0, 0)
 
     def __getattr__(self, attribute):
         """Re-map Rect attributes."""
@@ -137,7 +132,10 @@ class Tile(pygame.sprite.Sprite):
                 f"Tile has no attribute {attribute!r}."
             )
 
-    def update(self, dx, dy):
+    def update(self, x, y):
         """Moves tile by the given offset."""
-        self.rect.x += dx
-        self.rect.y += dy
+        self.offset.x = x
+        self.offset.y = y
+
+        self.rect.x = self.offset.x + self.rect.x
+        self.rect.y = self.offset.y + self.rect.y

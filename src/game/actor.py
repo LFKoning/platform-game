@@ -16,16 +16,16 @@ class Actor:
         self.speed = 8
         self.direction = pygame.Vector2(0, 0)
         self.location = pygame.Vector2(x, y)
+        self._offset = pygame.Vector2(0, 0)
 
         self.jump_speed = 16
         self.gravity = 0.8
 
-        self.on_top = None
-
         self.image = pygame.Surface((64, 64))
         self.image.fill("red")
         self.rect = self.image.get_rect(topleft=(x, y))
-        self._offset = pygame.Vector2(0, 0)
+
+        self.on_top = None
 
     def __getattr__(self, attribute):
         """Re-map Rect attributes."""
@@ -49,10 +49,10 @@ class Actor:
         """Makes the actor jump."""
         self.direction.y = -self.jump_speed
 
-    def update_offset(self, dx, dy):
+    def update_offset(self, x, y):
         """Updates the world offset."""
-        self._offset.x += dx
-        self._offset.y += dy
+        self._offset.x = x
+        self._offset.y = y
 
     def _move_horizontal(self):
         """Handle horizontal movement."""

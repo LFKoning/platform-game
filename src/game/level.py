@@ -38,7 +38,6 @@ class Level:
 
         # Add the player
         self.player = self._spawn_player()
-
         self.scroll_to(self.player.x, self.player.y)
 
     def _load(self, level_path, defaults):
@@ -136,9 +135,9 @@ class Level:
     def draw(self, target):
         """Draws tiles on the target surface."""
 
-        self.tiles.draw(target)
-
         self.player.update()
+
+        self.tiles.draw(target)
         self.player.draw(target)
 
     def _error(self, msg):
