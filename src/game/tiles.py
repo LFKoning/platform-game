@@ -21,7 +21,7 @@ class Tileset:
 
         tileset = self._load_file(tile_path)
         self.tile_width, self.tile_height = self._get_dimensions(tileset)
-        self._map = self._construct_map(tileset)
+        self._map = self._construct_mapping(tileset)
 
     def find(self, tile_code):
         """Looks up a tile code and returns its surface."""
@@ -68,7 +68,17 @@ class Tileset:
 
         return width, height
 
-    def _construct_map(self, tileset):
+    def _load_image(self, image_path):
+        """Loads an image from file."""
+        self._log.debug(f"Loading image: {image_path}.")
+        try:
+            return pygame.image.load(image_path)
+        except FileNotFoundError:
+            self._error(f"Cannot find tile image {image_path!r}.")
+        except pygame.error:
+            self._error(f"Invalid tile image {image_path!r}.")
+
+    def _construct_mapping(self, tileset):
         """Creates the tiles specification."""
 
         # Check the tiles mapping
@@ -84,23 +94,22 @@ class Tileset:
 
         tilemap = {}
         for code, properties in tileset["tiles"].items():
+
+            self._log.debug(f"Processing tile {code}: {properties}.")
             # Load tile image
             if "image" in properties:
-                image_path = properties["image"]
-                try:
-                    surface = pygame.image.load(image_path)
-                    surface = pygame.transform.scale(
-                        surface, (self.tile_width, self.tile_height)
-                    )
-                except FileNotFoundError:
-                    self._error(f"Cannot find tile image {image_path!r}.")
-                except pygame.error:
-                    self._error(f"Invalid tile image {image_path!r}.")
-
+                surface = self._load_image(properties["image"])
             # Create grey filler tile
             else:
                 surface = pygame.Surface((self.tile_width, self.tile_height))
                 surface.fill("grey")
+
+            # Add an overlay image
+            overlay = properties.get("overlay", None)
+            if overlay:
+                offset = overlay.get("offset", (0, 0))
+                overlay = self._load_image(overlay["image"])
+                surface.blit(overlay, offset)
 
             properties["image"] = surface
             tilemap[code] = properties
@@ -121,7 +130,6 @@ class Tile(pygame.sprite.Sprite):
         super().__init__()
         self.image = properties["image"]
         self.rect = self.image.get_rect(topleft=(x, y))
-        self.offset = pygame.Vector2(0, 0)
 
     def __getattr__(self, attribute):
         """Re-map Rect attributes."""

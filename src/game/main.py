@@ -7,7 +7,7 @@ from game.engine import GameEngine
 
 def run():
     """Sets up and starts the game."""
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     engine = GameEngine(SETTINGS)
     engine.run()
 

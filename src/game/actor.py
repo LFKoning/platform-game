@@ -1,4 +1,6 @@
 """Module for the Actor base class."""
+import logging
+
 import pygame
 
 
@@ -8,6 +10,7 @@ class Actor:
     def __init__(self, x, y, level):
         super().__init__()
 
+        self.log = logging.getLogger(self.__class__.__name__)
         self.level = level
 
         self.speed = 8
@@ -20,6 +23,7 @@ class Actor:
         self.image.fill("red")
         self.rect = self.image.get_rect(topleft=(x, y))
 
+        self.dead = False
         self.on_top = None
 
     def __getattr__(self, attribute):
@@ -49,6 +53,12 @@ class Actor:
         if self.direction.x == 0:
             return
 
+        # Check world bounds
+        if self.rect.x == 0 and self.direction.x < 0:
+            return
+        if self.rect.right == self.level.bounds.width and self.direction.x > 0:
+            return
+
         # Move the character
         self.rect.x += self.direction.x * self.speed
 
@@ -67,6 +77,10 @@ class Actor:
 
     def _move_vertical(self):
         """Handles vertical movement."""
+
+        # Check world bounds
+        if self.rect.top >= self.level.bounds.height:
+            self.dead = True
 
         # Standing on an object
         if self.on_top and self.direction.y == 0:
@@ -97,7 +111,11 @@ class Actor:
         for target in self.level.tiles.sprites():
             if self.rect.colliderect(target.rect):
                 return target
-        return None\
+        return None
+
+    def death(self):
+        """Actor death, must be overriden"""
+        raise NotImplementedError("Actor death not implemented.")
 
     def update(self):
         """Updates actor."""

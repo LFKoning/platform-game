@@ -1,7 +1,7 @@
 """Module for global game settings."""
 
 SETTINGS = {
-    "game_name": "The Game",
+    "game_name": "Platform Demo Game",
     "window_width": 1000,
     "window_height": 800,
     "background": "#5A9AE1",

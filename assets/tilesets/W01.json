@@ -3,6 +3,18 @@
     "tile_height": 64,
     "tiles": {
         "A": {"image": "assets/gfx/tiles/W01_A.png"},
-        "B": {"image": "assets/gfx/tiles/W01_B.png"}
+        "B": {"image": "assets/gfx/tiles/W01_B.png"},
+        "C": {
+            "image": "assets/gfx/tiles/W01_A.png",
+            "overlay": {
+                "image": "assets/gfx/tiles/W01_overgrown.png"
+            }
+        },
+        "D": {
+            "image": "assets/gfx/tiles/W01_B.png",
+            "overlay": {
+                "image": "assets/gfx/tiles/W01_overgrown.png"
+            }
+        }
     }
 }
