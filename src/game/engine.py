@@ -43,27 +43,29 @@ class GameEngine:
             self.fps = int(settings.get("fps", 60))
         except ValueError:
             self.error("FPS should be an integer.")
-        self._bg_color = settings.get("background", "black")
+        self.bg_color = settings.get("background", "black")
         try:
-            self._bg_color = pygame.Color(self._bg_color)
+            self.bg_color = pygame.Color(self.bg_color)
         except ValueError:
-            self.error(f"Invalid background color: {self._bg_color!r}.")
+            self.error(f"Invalid background color: {self.bg_color!r}.")
 
         # Create the game window
         self.log.debug(f"Creating window: {width} x {height}.")
         self.window_size = pygame.Vector2(width, height)
         self.window = pygame.display.set_mode(self.window_size)
         pygame.display.set_caption(self.name)
-        self._clock = pygame.time.Clock()
+
+        self.clock = pygame.time.Clock()
+        self.running = False
 
         # Load the first level
         if not settings.get("levels"):
             self.error("No levels supplied, nothing left to play.")
         self._level_nr = -1
         self.level = None
-        self._next_level()
+        self.next_level()
 
-    def _next_level(self):
+    def next_level(self):
         """Loads the next game level."""
         levels = self.settings.get("levels")
         if len(levels) > self._level_nr + 1:
@@ -81,21 +83,22 @@ class GameEngine:
     def run(self):
         """Start the engine."""
         pygame.init()
-        running = True
-        while running:
-            self._clock.tick(self.fps)
+        self.running = True
+        while self.running:
+
+            self.clock.tick(self.fps)
+            self.draw()
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.log.info(f"Ending game: {self.name!r}")
-                    running = False
+                    self.running = False
                     break
-
-            running = self.draw()
 
     def draw(self):
         """Redraws the screen."""
         if not self.level.ended:
-            self.window.fill(self._bg_color)
+            self.window.fill(self.bg_color)
             self.level.draw(self.window)
             pygame.display.update()
             return True
@@ -104,7 +107,8 @@ class GameEngine:
             self.log.info("Oh noes, you failed the level...")
         else:
             self.log.info("Hurrah you finished the level...")
-        return False
+
+        self.running = False
 
     def error(self, msg):
         """Logs and handles exceptions."""

@@ -3,6 +3,7 @@ import json
 import logging
 
 import pygame
+from .assets import AssetMixin
 
 from game.tiles import Tile, Tileset
 from game.player import Player
@@ -13,7 +14,7 @@ class LevelFileError(Exception):
     """Raised when a level file contains errors."""
 
 
-class Level:
+class Level(AssetMixin):
     """Class for loading and processing game levels."""
 
     required_attributes = [
@@ -32,9 +33,9 @@ class Level:
 
         # Create the level
         self.offset = pygame.Vector2(0, 0)
-        self.level = self._load(level_path, engine.settings)
+        self.level = self.load(level_path, engine.settings)
         self.tileset = Tileset(self.level["tileset"])
-        self.tiles, self.bounds = self._construct(self.level["tiles"], self.tileset)
+        self.tiles, self.bounds = self.construct(self.level["tiles"], self.tileset)
 
         # Create the camera
         self.camera = BoundedCamera(engine.window_size, self.bounds)
@@ -46,19 +47,12 @@ class Level:
         self.failed = False
         self.ended = False
 
-    def _load(self, level_path, defaults):
+    def load(self, level_path, defaults):
         """Loads a level from a JSON file."""
         self.log.debug(f"Loading level: {level_path!r}")
 
         # Read the file contents
-        try:
-            with open(level_path, "r", encoding="utf-8") as level_file:
-                level = json.load(level_file)
-
-        except FileNotFoundError:
-            self._error(f"Cannot find level file: {level_path!r}.")
-        except json.decoder.JSONDecodeError:
-            self._error(f"Level {level_path!r} is not valid JSON.")
+        level = self.load_json(level_path)
 
         # Check required attributes
         for attribute in self.required_attributes:
@@ -66,14 +60,13 @@ class Level:
                 if attribute in defaults:
                     level[attribute] = defaults[attribute]
                 else:
-                    self._error(
+                    self.error(
                         f"Level {level_path!r} misses required attribute {attribute!r}."
                     )
-
         return level
 
     @staticmethod
-    def _construct(level, tileset):
+    def construct(level, tileset):
         """Constructs tiles for the level."""
         tiles = pygame.sprite.Group()
         bounds = None
@@ -116,7 +109,7 @@ class Level:
             spawn_x = int(spawn_x * self.tileset.tile_width)
             spawn_y = int(spawn_y * self.tileset.tile_height)
         except (TypeError, ValueError):
-            self._error("Invalid player spawn point, use [x, y] integers.")
+            self.error("Invalid player spawn point, use [x, y] integers.")
 
         return Player(spawn_x, spawn_y, self)
 
@@ -135,7 +128,7 @@ class Level:
             target.blit(tile.image, self.camera.apply(tile))
         target.blit(self.player.image, self.camera.apply(self.player))
 
-    def _error(self, msg):
+    def error(self, msg):
         """Logs and handles exceptions."""
         self.log.error(msg)
         raise LevelFileError(msg)

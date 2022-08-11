@@ -7,32 +7,28 @@ import pygame
 class Actor:
     """Base class for all actors."""
 
-    def __init__(self, x, y, level):
-        super().__init__()
-
+    def __init__(self, x, y, w, h, level):
         self.log = logging.getLogger(self.__class__.__name__)
         self.level = level
 
-        self.speed = 8
+        # Define positional info
+        self.rect = pygame.Rect(x, y, w, h)
         self.direction = pygame.Vector2(0, 0)
 
+        # Define speeds
+        self.speed = 8
         self.jump_speed = 16
         self.gravity = 0.8
 
-        self.image = pygame.Surface((64, 64))
-        self.image.fill("red")
-        self.rect = self.image.get_rect(topleft=(x, y))
+        self.last_tick = -1
+        self.animations = self.load_animations()
 
         self.dead = False
         self.on_top = None
 
-    def __getattr__(self, attribute):
-        """Re-map Rect attributes."""
-        if hasattr(self.rect, attribute):
-            return getattr(self.rect, attribute)
-        raise AttributeError(
-            f"{self.__class__.__name__} has no attribute {attribute!r}."
-        )
+    def load_animations(self):
+        """Should be overwritten by child classes."""
+        return {}
 
     def move(self, direction):
         """Moves the location of the actor."""
@@ -46,7 +42,7 @@ class Actor:
         """Makes the actor jump."""
         self.direction.y = -self.jump_speed
 
-    def _move_horizontal(self):
+    def move_horizontal(self):
         """Handle horizontal movement."""
 
         # No movement
@@ -63,7 +59,7 @@ class Actor:
         self.rect.x += self.direction.x * self.speed
 
         # Check collisions
-        collided = self._check_collision()
+        collided = self.check_collision()
         if collided:
             # Bumped into something on the left
             if self.direction.x < 0:
@@ -75,7 +71,7 @@ class Actor:
                 self.direction.x = 0
                 self.rect.right = collided.left
 
-    def _move_vertical(self):
+    def move_vertical(self):
         """Handles vertical movement."""
 
         # Check world bounds
@@ -93,7 +89,7 @@ class Actor:
         self.direction.y += self.gravity
         self.rect.y += self.direction.y
 
-        collided = self._check_collision()
+        collided = self.check_collision()
         if collided:
             # Landed on something
             if self.direction.y > 0:
@@ -106,18 +102,40 @@ class Actor:
                 self.direction.y = 0
                 self.rect.top = collided.bottom
 
-    def _check_collision(self):
+    def check_collision(self):
         """Checks for colissions."""
         for target in self.level.tiles.sprites():
             if self.rect.colliderect(target.rect):
                 return target
         return None
 
-    def death(self):
-        """Actor death, must be overriden"""
-        raise NotImplementedError("Actor death not implemented.")
-
     def update(self):
-        """Updates actor."""
-        self._move_vertical()
-        self._move_horizontal()
+        """Updates the actor."""
+
+        # Actor is controlled by a player
+        if hasattr(self, "handle_input"):
+            self.handle_input()
+
+        # Handle actor movement
+        self.move_vertical()
+        self.move_horizontal()
+
+        self.play_animation()
+
+    def play_animation(self):
+        """Plays actor's animations."""
+        animation = "idle"
+
+        tick = pygame.time.get_ticks()
+        if animation in self.animations:
+            if self.last_tick == -1 or tick - self.last_tick > 150:
+                self.image = next(self.animations[animation])
+                self.last_tick = tick
+
+    def __getattr__(self, attribute):
+        """Re-map Rect attributes."""
+        if hasattr(self.rect, attribute):
+            return getattr(self.rect, attribute)
+        raise AttributeError(
+            f"{self.__class__.__name__} has no attribute {attribute!r}."
+        )

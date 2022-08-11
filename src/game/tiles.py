@@ -5,12 +5,14 @@ import logging
 
 import pygame
 
+from game.assets import AssetMixin
+
 
 class TilesetFileError(Exception):
     """Raised when the tileset file contains errors."""
 
 
-class Tileset:
+class Tileset(AssetMixin):
     """Tileset class that maps tile codes to sprites."""
 
     _required = set(("tile_width", "tile_height", "tiles"))
@@ -19,9 +21,9 @@ class Tileset:
     def __init__(self, tile_path):
         self._log = logging.getLogger(__name__)
 
-        tileset = self._load_file(tile_path)
-        self.tile_width, self.tile_height = self._get_dimensions(tileset)
-        self._map = self._construct_mapping(tileset)
+        tileset = self.load_json(tile_path)
+        self.tile_width, self.tile_height = self.get_dimensions(tileset)
+        self._map = self.construct_mapping(tileset)
 
     def find(self, tile_code):
         """Looks up a tile code and returns its surface."""
@@ -29,31 +31,7 @@ class Tileset:
             self._error(f"Tile {tile_code!r} not found.")
         return self._map[tile_code]
 
-    def _load_file(self, tile_path):
-        """Loads a tileset from a JSON file."""
-        self._log.debug(f"Loading tileset: {tile_path!r}")
-
-        # Read the file contents
-        try:
-            with open(tile_path, "r", encoding="utf-8") as tile_file:
-                tileset = json.load(tile_file)
-
-        except FileNotFoundError:
-            self._error(f"Tileset {tile_path!r}: Cannot find the file.")
-        except json.decoder.JSONDecodeError:
-            self._error(f"Tileset {tile_path!r}: Invalid JSON file.")
-
-        # Check required keys
-        missing = self._required - set(tileset)
-        if missing:
-            self._error(
-                "Tileset is missing attributes: "
-                + ", ".join([repr(v) for v in missing])
-            )
-
-        return tileset
-
-    def _get_dimensions(self, tileset):
+    def get_dimensions(self, tileset):
         """Gets tile dimensions from the tileset."""
 
         try:
@@ -68,17 +46,7 @@ class Tileset:
 
         return width, height
 
-    def _load_image(self, image_path):
-        """Loads an image from file."""
-        self._log.debug(f"Loading image: {image_path}.")
-        try:
-            return pygame.image.load(image_path)
-        except FileNotFoundError:
-            self._error(f"Cannot find tile image {image_path!r}.")
-        except pygame.error:
-            self._error(f"Invalid tile image {image_path!r}.")
-
-    def _construct_mapping(self, tileset):
+    def construct_mapping(self, tileset):
         """Creates the tiles specification."""
 
         # Check the tiles mapping
@@ -98,7 +66,7 @@ class Tileset:
             self._log.debug(f"Processing tile {code}: {properties}.")
             # Load tile image
             if "image" in properties:
-                surface = self._load_image(properties["image"])
+                surface = self.load_image(properties["image"])
             # Create grey filler tile
             else:
                 surface = pygame.Surface((self.tile_width, self.tile_height))
@@ -108,7 +76,7 @@ class Tileset:
             overlay = properties.get("overlay", None)
             if overlay:
                 offset = overlay.get("offset", (0, 0))
-                overlay = self._load_image(overlay["image"])
+                overlay = self.load_image(overlay["image"])
                 surface.blit(overlay, offset)
 
             properties["image"] = surface
