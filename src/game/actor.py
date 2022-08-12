@@ -124,12 +124,22 @@ class Actor:
 
     def play_animation(self):
         """Plays actor's animations."""
-        animation = "idle"
+
+        flip_horizontal = False
+        if self.direction.x > 0:
+            animation = "run"
+        elif self.direction.x < 0:
+            animation = "run"
+            flip_horizontal = True
+        else:
+            animation = "idle"
 
         tick = pygame.time.get_ticks()
         if animation in self.animations:
-            if self.last_tick == -1 or tick - self.last_tick > 150:
+            if self.last_tick == -1 or tick - self.last_tick > 100:
                 self.image = next(self.animations[animation])
+                if flip_horizontal:
+                    self.image = pygame.transform.flip(self.image, True, False)
                 self.last_tick = tick
 
     def __getattr__(self, attribute):
