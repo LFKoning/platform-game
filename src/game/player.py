@@ -1,6 +1,6 @@
 """Module for the Player class."""
+import logging
 from pathlib import Path
-from itertools import cycle
 
 import pygame
 
@@ -9,14 +9,25 @@ from game.assets import AssetMixin
 
 
 class Player(Actor, AssetMixin):
-    """Class for the player."""
+    """Class for the player.
 
-    def __init__(self, x, y, level):
-        self.width = 64
-        self.height = 64
-        super().__init__(x, y, self.width, self.height, level)
+    Parameters
+    ----------
+    x : int
+        Horizontal spawn location for the player.
+    y : int
+        vertical spawn location for the player.
+    level: game.level.Level
+        Reference to the current level.
+    """
 
-    def handle_input(self):
+    def __init__(self, x: int, y: int, level: "Level") -> None:
+        self.log = logging.getLogger(self.__class__.__name__)
+
+        animation_path = Path.cwd() / "assets/gfx/player"
+        super().__init__(x, y, 64, 64, animation_path, level)
+
+    def handle_input(self) -> None:
         """Reads input and performs associated actions."""
 
         keys = pygame.key.get_pressed()
@@ -32,22 +43,3 @@ class Player(Actor, AssetMixin):
 
         if keys[pygame.K_SPACE] and self.on_top:
             self.jump()
-
-    def load_animations(self):
-        """Loads player animations"""
-
-        animations = {}
-        for animation in "idle", "jump", "run":
-            anim_path = Path.cwd() / "assets/gfx/player" / animation
-            images = anim_path.glob("*.png")
-
-            images = cycle([
-                pygame.transform.scale(
-                    self.load_image(i).convert_alpha(),
-                    (self.width, self.height)
-                )
-                for i in images
-            ])
-            animations[animation] = images
-
-        return animations

@@ -1,18 +1,50 @@
 """Module for the Actor base class."""
 import logging
 
+from typing import Any
+from pathlib import Path
+from itertools import cycle
+
 import pygame
 
 
 class Actor:
-    """Base class for all actors."""
+    """Base class for all actors.
 
-    def __init__(self, x, y, w, h, level):
+    Parameters
+    ----------
+    x : int
+        Horizontal spawn location for the actor.
+        Measured as pixels from top left corner of the level.
+    y : int
+        Vertical spawn location for the player
+        Measured as pixels from top left corner of the level.
+    width : int
+        Width of the actor in pixels.
+    height : int
+        Height of the actor in pixels.
+    animation_path : pathlib.Path
+        Path to the animations base folder.
+    level : game.level.Level
+        Reference to the current level.
+    """
+
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        animation_path: Path,
+        level: "Level",
+    ) -> None:
         self.log = logging.getLogger(self.__class__.__name__)
         self.level = level
 
         # Define positional info
-        self.rect = pygame.Rect(x, y, w, h)
+        self.width = width
+        self.height = 64
+        self.rect = pygame.Rect(x, y, width, height)
         self.direction = pygame.Vector2(0, 0)
 
         # Define speeds
@@ -20,29 +52,63 @@ class Actor:
         self.jump_speed = 16
         self.gravity = 0.8
 
+        self.last_animation = None
         self.last_tick = -1
-        self.animations = self.load_animations()
+        self.animations = self.load_animations(animation_path)
 
         self.dead = False
         self.on_top = None
 
-    def load_animations(self):
-        """Should be overwritten by child classes."""
-        return {}
+    def load_animations(self, base_path: Path) -> dict:
+        """Loads player animations.
 
-    def move(self, direction):
-        """Moves the location of the actor."""
+        Parameters
+        ----------
+        base_path : Path
+            Path to the actors animations folder.
+
+        Returns
+        -------
+        dict
+            Dict mapping animations to cycles of images.
+        """
+
+        animations = {}
+        for animation in "fall", "idle", "jump", "run":
+            anim_path = base_path / animation
+            images = anim_path.glob("*.png")
+
+            images = cycle(
+                [
+                    pygame.transform.scale(
+                        self.load_image(i).convert_alpha(), (self.width, self.height)
+                    )
+                    for i in images
+                ]
+            )
+            animations[animation] = images
+
+        return animations
+
+    def move(self, direction: str) -> None:
+        """Move the actor in the provided direction.
+
+        Parameters
+        ----------
+        direction : {"left", "right"}
+            Direction to move the actor in.
+        """
         self.direction.x = 1 if direction == "right" else -1
 
-    def stop(self):
-        """Stops movement."""
+    def stop(self) -> None:
+        """Stop actor movement."""
         self.direction.x = 0
 
-    def jump(self):
-        """Makes the actor jump."""
+    def jump(self) -> None:
+        """Make the actor jump."""
         self.direction.y = -self.jump_speed
 
-    def move_horizontal(self):
+    def move_horizontal(self) -> None:
         """Handle horizontal movement."""
 
         # No movement
@@ -71,8 +137,8 @@ class Actor:
                 self.direction.x = 0
                 self.rect.right = collided.left
 
-    def move_vertical(self):
-        """Handles vertical movement."""
+    def move_vertical(self) -> None:
+        """Handle vertical movement."""
 
         # Check world bounds
         if self.rect.top >= self.level.bounds.height:
@@ -102,14 +168,14 @@ class Actor:
                 self.direction.y = 0
                 self.rect.top = collided.bottom
 
-    def check_collision(self):
-        """Checks for colissions."""
+    def check_collision(self) -> None:
+        """Check for colissions between the actor and tiles."""
         for target in self.level.tiles.sprites():
             if self.rect.colliderect(target.rect):
                 return target
         return None
 
-    def update(self):
+    def update(self) -> None:
         """Updates the actor."""
 
         # Actor is controlled by a player
@@ -122,28 +188,48 @@ class Actor:
 
         self.play_animation()
 
-    def play_animation(self):
-        """Plays actor's animations."""
+    def play_animation(self) -> None:
+        """Play actor animations."""
 
-        flip_horizontal = False
-        if self.direction.x > 0:
+        if self.direction.y < 0:
+            animation = "jump"
+        elif self.direction.y > 0:
+            animation = "fall"
+        elif self.direction.x != 0:
             animation = "run"
-        elif self.direction.x < 0:
-            animation = "run"
-            flip_horizontal = True
         else:
             animation = "idle"
 
+        flip_horizontal = True if self.direction.x < 0 else False
+
         tick = pygame.time.get_ticks()
         if animation in self.animations:
-            if self.last_tick == -1 or tick - self.last_tick > 100:
+            if self.last_animation != animation or tick - self.last_tick > 100:
                 self.image = next(self.animations[animation])
                 if flip_horizontal:
                     self.image = pygame.transform.flip(self.image, True, False)
+
+                self.last_animation = animation
                 self.last_tick = tick
 
-    def __getattr__(self, attribute):
-        """Re-map Rect attributes."""
+    def __getattr__(self, attribute: str) -> Any:
+        """Map unknown attributes to actor Rect.
+
+        Parameters
+        ----------
+        attribute : str
+            Attribute to retrieve.
+
+        Returns
+        -------
+        Any
+            The attribute's value.
+
+        Raises
+        ------
+        AttributeError
+            Raised when actor Rect does not have the attribute.
+        """
         if hasattr(self.rect, attribute):
             return getattr(self.rect, attribute)
         raise AttributeError(
