@@ -6,7 +6,7 @@ import pygame
 
 from game.actor import Actor
 from game.assets import AssetMixin
-
+from game.level import Level
 
 class Player(Actor, AssetMixin):
     """Class for the player.
@@ -21,7 +21,7 @@ class Player(Actor, AssetMixin):
         Reference to the current level.
     """
 
-    def __init__(self, x: int, y: int, level: "Level") -> None:
+    def __init__(self, x: int, y: int, level: Level) -> None:
         self.log = logging.getLogger(self.__class__.__name__)
 
         animation_path = Path.cwd() / "assets/gfx/player"
